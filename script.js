@@ -8,9 +8,6 @@ const main=async()=> {
             query: `
             {
                 logAccountCreateds(first: 5) {
-                    id
-                    sender
-                    owner
                     account
                   }
             }
@@ -18,7 +15,13 @@ const main=async()=> {
         }
         
         );
+        
+        datas=Object.values(result.data.data.logAccountCreateds);
+        for (var i = 0; i < datas.length; i++)
+        {
+            console.log(datas[i].account);
+        }
+        
 
-        console.log(result.data.data.logAccountCreateds);
 }
 main();
