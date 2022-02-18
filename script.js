@@ -66,8 +66,8 @@ const main=async()=> {
 
     let empty_set = new Set();
 
-    //stores how many unique dsa-users own this tokenid
-    let tokenidmap = new Map();
+    //stores a list of unique tokenids owned by our dsa
+    let tokenidset = new Set();
     
     //maps every dsa user to a set of tokens which he/she currently owns
     let usertokenmap = new Map();
@@ -76,22 +76,21 @@ const main=async()=> {
 
     for (var i = 0; i < datas1.length; i++)
     {
-        //updates count of how many unique dsa-users own this tokenid
+        //updates the set tokenidset which stores a list of unique tokenids owned by our dsa
         // if the to account is a dsa-account then we increment the count by one
         // if the from account is a dsa-account then we decrement the count by one
 
-        if(dsa_accounts.get(datas1[i].to)!=undefined)
+        if(dsa_accounts.get(datas1[i].to)!=undefined && dsa_accounts.get(datas1[i].from)!=undefined)
         {
-            if(tokenidmap.get(datas1[i].tokenId)==undefined)
-            tokenidmap.set(datas1[i].tokenId,1);
-            else 
-            tokenidmap.set(datas1[i].tokenId,tokenidmap.get(datas1[i].tokenId)+1);
+            ;
+        }
+        else if(dsa_accounts.get(datas1[i].to)!=undefined)
+        {
+            tokenidset.add(datas1[i].tokenId);
         }
         else if(dsa_accounts.get(datas1[i].from)!=undefined)
         {
-            if(tokenidmap.get(datas1[i].tokenId)==undefined);
-            else if(tokenidmap.get(datas1[i].tokenId)>=1)
-            tokenidmap.set(datas1[i].tokenId,tokenidmap.get(datas1[i].tokenId)-1);
+            tokenidset.remove(datas1[i].tokenId);
         }
 
         //if the to account is a dsa-account we add the tokenid into the set of tokenids owned by that dsa-account user
@@ -138,12 +137,12 @@ const main=async()=> {
     //code to increase liquidty of tokens owned by dsa-accounts
     for(var i=0;i<datas2.length;i++)
     {
-        if(tokenidmap.get(datas2[i].tokenId)!=undefined && tokenidmap.get(datas2[i].tokenId)!=0)
+        if(tokenidset.has(datas2[i].tokenId))
         {
             if(liq.get(datas2[i].tokenId)==undefined)
                 liq.set(datas2[i].tokenId,parseInt(datas2[i].liquidity));
             else
-                liq.set(datas2[i].tokenId,liq.get(datas2[i].tokenId)-parseInt(datas2[i].liquidity));
+                liq.set(datas2[i].tokenId,liq.get(datas2[i].tokenId)+parseInt(datas2[i].liquidity));
         }
     }
 
@@ -166,13 +165,13 @@ const main=async()=> {
         
         );
 
-    datas3=Object.values(result2.data.data.decreaseLiquidities);
+    datas3=Object.values(result3.data.data.decreaseLiquidities);
     
-    //code to decreaste liquidty of tokens owned by dsa-accounts
+    //code to decrease liquidty of tokens owned by dsa-accounts
 
     for(var i=0;i<datas3.length;i++)
     {
-        if(tokenidmap.get(datas3[i].tokenId)!=undefined)
+        if(tokenidset.has(datas3[i].tokenId))
         {
             if(liq.get(datas3[i].tokenId)!=undefined&&liq.get(datas3[i].tokenId)>=parseInt(datas3[i].liquidity))
                 liq.set(datas3[i].tokenId,liq.get(datas3[i].tokenId)-parseInt(datas3[i].liquidity));
