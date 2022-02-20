@@ -16,42 +16,77 @@ let contract1 = new ethers.Contract(address_erc, NewAbi1, provider);
 
 
 const main=async()=> {
+    var tr=``;
+     var result;
+     //var ctr=1;
 
-    
-    const result = await axios.post(
+
+     // let dsa_accounts = new Map();
+     let dsa_accounts = new Map();
+
+
+     while(1)
+     {
+        result = await axios.post(
         'https://api.thegraph.com/subgraphs/name/anilmuthigi/dsa-accounts',
         {
-            query: `
+            query : `
             {
-                logAccountCreateds(first: 1000, skip: 4000) {
+                logAccountCreateds(first: 1000, where: {id_gt:"`+tr+`"}){
+                    id
                     account
                     owner
                   }
             }
             `
+            
         }
         
         );
 
-    //maps 1 to all dsa addresses  
-    let dsa_accounts = new Map();
+        //console.log(Object.values(result.data.data.logAccountCreateds).length + " "+ctr);
+        //ctr++;
+        if(Object.values(result.data.data.logAccountCreateds).length===0)break;
+        datas=Object.values(result.data.data.logAccountCreateds);
+        for (var i = 0; i < datas.length; i++)
+        {
+            dsa_accounts.set(datas[i].owner,1);
+        }
 
-    datas=Object.values(result.data.data.logAccountCreateds);
-    for (var i = 0; i < datas.length; i++)
-    {
-        dsa_accounts.set(datas[i].account,1);
+        
+        tr=result.data.data.logAccountCreateds[Object.values(result.data.data.logAccountCreateds).length-1].id;
     }
+    //maps 1 to all dsa addresses  
+    // let dsa_accounts = new Map();
 
-    //console.log(dsa_accounts);
+    // datas=Object.values(result.data.data.logAccountCreateds);
+    // for (var i = 0; i < datas.length; i++)
+    // {
+    //     dsa_accounts.set(datas[i].account,1);
+    // }
+
+    // console.log(datas.length);
 
     
 
+    //stores a list of unique tokenids owned by our dsa
+    let tokenidset = new Set();
+    
+    //maps every token to the dsa account which owns it
+    let usertokenmap = new Map();
+
+    tr=``;
+
+    while(1)
+    {
+
+    
     const result1 = await axios.post(
         'https://api.thegraph.com/subgraphs/name/anilmuthigi/erc721_transfer',
         {
             query: `
             {
-                transfers(first: 1000) {
+                transfers(first: 1000, where: {id_gt:"`+tr+`"}){
                     id
                     from
                     to
@@ -63,62 +98,64 @@ const main=async()=> {
         
         );  
 
-
-    let empty_set = new Set();
-
-    //stores a list of unique tokenids owned by our dsa
-    let tokenidset = new Set();
+    if(Object.values(result1.data.data.transfers).length===0)break;
     
-    //maps every dsa user to a set of tokens which he/she currently owns
-    let usertokenmap = new Map();
-
     datas1=Object.values(result1.data.data.transfers);
 
     for (var i = 0; i < datas1.length; i++)
     {
         //updates the set tokenidset which stores a list of unique tokenids owned by our dsa
-        // if the to account is a dsa-account then we increment the count by one
-        // if the from account is a dsa-account then we decrement the count by one
 
-        if(dsa_accounts.get(datas1[i].to)!=undefined && dsa_accounts.get(datas1[i].from)!=undefined)
+        if(dsa_accounts.get(datas1[i].to)===1 && dsa_accounts.get(datas1[i].from)===1)
         {
-            ;
+           ;
         }
-        else if(dsa_accounts.get(datas1[i].to)!=undefined)
+        else if(dsa_accounts.get(datas1[i].to)===1)
         {
             tokenidset.add(datas1[i].tokenId);
         }
-        else if(dsa_accounts.get(datas1[i].from)!=undefined)
+        else if(dsa_accounts.get(datas1[i].from)===1)
         {
-            tokenidset.remove(datas1[i].tokenId);
+            tokenidset.delete(datas1[i].tokenId);
         }
 
-        //if the to account is a dsa-account we add the tokenid into the set of tokenids owned by that dsa-account user
-        if(dsa_accounts.get(datas1[i].to)!=undefined)
+
+        //if the from account is a dsa-account, we erase the mapping of the tokenid 
+
+        if(dsa_accounts.get(datas1[i].from)===1 && dsa_accounts.get(datas1[i].to)!=1)
         {
-            if(usertokenmap.get(datas1[i].to)==undefined)usertokenmap.set(datas1[i].to,empty_set);
-            usertokenmap.get(datas1[i].to).add(datas1[i].tokenId);
+            usertokenmap.delete(datas1[i].tokenId);
         }
 
-        //if the from account is a dsa-account, we remove the tokenid from the set of tokenids owned by that dsa-account user
-
-        if(dsa_accounts.get(datas1[i].from)!=undefined)
+        //if the to account is a dsa-account we map the tokenid to the address of the to account
+        if(dsa_accounts.get(datas1[i].to)===1)
         {
-            usertokenmap.get(datas1[i].from).delete(datas1[i].tokenId);
+            usertokenmap.set(datas1[i].tokenId,datas1[i].to);
+            
         }
+
+       
 
     }
 
+    tr = result1.data.data.transfers[Object.values(result1.data.data.transfers).length-1].id;
+
+    }
+
+    console.log(usertokenmap);
+
     //maps tokenid to liquidity
     let liq = new Map();
+tr=``;
 
-
+while(1)
+{
     const result2 = await axios.post(
         'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
         {
             query: `
             {
-                increaseLiquidities(first: 1000) {
+                increaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
                     id
                     tokenId
                     liquidity
@@ -131,7 +168,7 @@ const main=async()=> {
         
         );
 
-
+    if(Object.values(result2.data.data.increaseLiquidities).length===0)break;
     datas2=Object.values(result2.data.data.increaseLiquidities);
 
     //code to increase liquidty of tokens owned by dsa-accounts
@@ -139,20 +176,26 @@ const main=async()=> {
     {
         if(tokenidset.has(datas2[i].tokenId))
         {
-            if(liq.get(datas2[i].tokenId)==undefined)
+            if(liq.get(datas2[i].tokenId)===undefined)
                 liq.set(datas2[i].tokenId,parseInt(datas2[i].liquidity));
             else
                 liq.set(datas2[i].tokenId,liq.get(datas2[i].tokenId)+parseInt(datas2[i].liquidity));
         }
     }
 
+    tr = result2.data.data.increaseLiquidities[Object.values(result2.data.data.increaseLiquidities).length-1].id;
 
+}
+
+tr=``;
+while(1)
+{
     const result3 = await axios.post(
         'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
         {
             query: `
             {
-                decreaseLiquidities(first: 1000) {
+                decreaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
                     id
                     tokenId
                     liquidity
@@ -165,6 +208,7 @@ const main=async()=> {
         
         );
 
+    if(Object.values(result3.data.data.decreaseLiquidities).length===0)break;
     datas3=Object.values(result3.data.data.decreaseLiquidities);
     
     //code to decrease liquidty of tokens owned by dsa-accounts
@@ -177,6 +221,10 @@ const main=async()=> {
                 liq.set(datas3[i].tokenId,liq.get(datas3[i].tokenId)-parseInt(datas3[i].liquidity));
         }
     }
+    tr = result3.data.data.decreaseLiquidities[Object.values(result3.data.data.decreaseLiquidities).length-1].id;
+
+
+}
 
     for (const [key, value] of liq.entries()) {
         console.log(key, value);
