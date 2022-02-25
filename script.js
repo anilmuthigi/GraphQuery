@@ -1,5 +1,6 @@
 const axios=require('axios');
 const ethers = require('ethers');
+const { MultiCall }= require('@indexed-finance/multicall');
 
 const dotenv = require('dotenv').config();
 
@@ -15,15 +16,25 @@ const address_erc="0xB2D6fb1Dc231F97F8cC89467B52F7C4F78484044";
 let contract1 = new ethers.Contract(address_erc, NewAbi1, provider);
 
 
+const Contractabi = require("./contractabi.json");
+
+const NewAbi2 = require("./abi2.json");
+const address_ver="0x2971AdFa57b20E5a416aE5a708A8655A9c74f723";
+let contract2 = new ethers.Contract(address_ver, NewAbi2, provider);
+
 const main=async()=> {
     var tr=``;
      var result;
      //var ctr=1;
 
+    //console.log(contract2);
+    
+
+    const multi = new MultiCall(provider);
 
      // let dsa_accounts = new Map();
      let dsa_accounts = new Map();
-
+     let dsa_accounts_map = new Map();
 
      while(1)
      {
@@ -35,6 +46,7 @@ const main=async()=> {
                 logAccountCreateds(first: 1000, where: {id_gt:"`+tr+`"}){
                     id
                     sender
+                    owner
                     account
                   }
             }
@@ -50,23 +62,60 @@ const main=async()=> {
         datas=Object.values(result.data.data.logAccountCreateds);
         for (var i = 0; i < datas.length; i++)
         {
-            dsa_accounts.set(datas[i].account,1);
+            dsa_accounts.set(datas[i].account,2);
+            dsa_accounts_map.set(datas[i].owner,datas[i].account);
+               
         }
 
         
         tr=result.data.data.logAccountCreateds[Object.values(result.data.data.logAccountCreateds).length-1].id;
     }
-    //maps 1 to all dsa addresses  
-    // let dsa_accounts = new Map();
+    
+    console.log(dsa_accounts.size);
+    var resultversion;
+    var cnt=0;
+    tr=``;
+    while(1)
+    {
+       resultversion = await axios.post(
+       'https://api.thegraph.com/subgraphs/name/anilmuthigi/accountversion',
+       {
+           query : `
+           {
+                builds(first: 1000, where: {id_gt:"`+tr+`"}){
+                    id
+                    owner
+                    accountVersion
+                    origin
+                 }
+           }
+           `
+           
+       }
+       
+       );
 
-    // datas=Object.values(result.data.data.logAccountCreateds);
-    // for (var i = 0; i < datas.length; i++)
-    // {
-    //     dsa_accounts.set(datas[i].account,1);
-    // }
+       //console.log(Object.values(result.data.data.logAccountCreateds).length + " "+ctr);
+       //ctr++;
+       if(Object.values(resultversion.data.data.builds).length===0)break;
+       dataversion=Object.values(resultversion.data.data.builds);
+       for (var i = 0; i < dataversion.length; i++)
+       {
+           //console.log(dataversion[i].owner.toString());
+           if(dsa_accounts_map.has(dataversion[i].owner.toString()))
+           {
+                if(parseInt(dataversion[i].accountVersion)==1)
+                {
+                    dsa_accounts.set(dsa_accounts_map.get(dataversion[i].owner),parseInt(dataversion[i].accountVersion));
+                    cnt++;
+                }        
+           }      
+       }    
+       tr=resultversion.data.data.builds[Object.values(resultversion.data.data.builds).length-1].id;
+   }
+   console.log(cnt);
 
     console.log(dsa_accounts.size);
-
     
 
     //stores a list of unique tokenids owned by our dsa
@@ -107,30 +156,28 @@ const main=async()=> {
         //updates the set tokenidset which stores a list of unique tokenids owned by our dsa
 
        
-        if(dsa_accounts.get(datas1[i].to)==1 && dsa_accounts.get(datas1[i].from)==1)
+        if(dsa_accounts.has(datas1[i].to) && dsa_accounts.has(datas1[i].from))
         {
             ;
         }
-        else if(dsa_accounts.get(datas1[i].to)==1)
+        else if(dsa_accounts.has(datas1[i].to))
         {
             //console.log(datas1[i].tokenId);
             tokenidset.add(datas1[i].tokenId);
         }
-        else if(dsa_accounts.get(datas1[i].from)==1)
+        else if(dsa_accounts.has(datas1[i].from))
         {
             tokenidset.delete(datas1[i].tokenId);
         }
-
-
         //if the from account is a dsa-account, we erase the mapping of the tokenid 
 
-        if(dsa_accounts.get(datas1[i].from)==1 && dsa_accounts.get(datas1[i].to)!=1)
+        if(dsa_accounts.has(datas1[i].from) && !(dsa_accounts.has(datas1[i].to)))
         {
             usertokenmap.delete(datas1[i].tokenId);
         }
 
         //if the to account is a dsa-account we map the tokenid to the address of the to account
-        if(dsa_accounts.get(datas1[i].to)==1)
+        if(dsa_accounts.has(datas1[i].to))
         {
             usertokenmap.set(datas1[i].tokenId,datas1[i].to);
             
@@ -144,10 +191,24 @@ const main=async()=> {
 
     }
 
+
     console.log(tokenidset.size);
     console.log(usertokenmap.size);
 
     console.log(usertokenmap);
+    const inputs = [];
+    var cbt=0;
+    for(const elem of tokenidset)
+    {
+        inputs.push({ target:`0x9156cD73ba5F792E26e9a1762DfC05162d9408c5`,function:'getPositionInfoByTokenId',args:[elem] });
+        cbt++;
+        if(cbt==40)break;
+    }
+
+
+    const tokendata = await multi.multiCall(Contractabi,inputs);
+   for(var i=0;i<40;i++)
+   console.log(tokendata[1][i][10].toString(),tokendata[1][i][11].toString());
 
     //maps tokenid to liquidity
     let liq = new Map();
@@ -194,6 +255,9 @@ while(1)
 
 }
 
+
+
+
 tr=``;
 while(1)
 {
@@ -232,35 +296,8 @@ while(1)
 
 
 }
-
     for (const [key, value] of liq.entries()) {
         console.log(key, value);
       }
-
-
-
-
-        // datas=Object.values(result.data.data.logAccountCreateds);
-        // for (var i = 0; i < datas.length; i++)
-        // {
-
-        //     let userData =  await contract.functions.balanceOf(datas[i].account);
-
-
-        //     let d=userData.toString();
-        //     if(d!=0)
-        //     {
-        //         console.log("Account address: "+datas[i].account);
-        //         console.log("Number of NFT'S: "+userData.toString());
-        //         for(var j=0;j<parseInt(d);j++)
-        //         {
-        //             let data =  await contract.functions.tokenOfOwnerByIndex(datas[i].account,j);
-        //             console.log("Token id: "+data.toString());
-        //         }
-        //     }
-                 
-   
-        // }
-
 }
 main();
