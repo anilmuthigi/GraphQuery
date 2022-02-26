@@ -91,53 +91,53 @@ const main=async()=> {
     //prints the number of dsa
     console.log(dsa_accounts.size);
 
-    //stores the data for build function call
-    var resultversion;
-    var cnt=0;
-    tr=``;
-    while(1)
-    {
-       resultversion = await axios.post(
-       'https://api.thegraph.com/subgraphs/name/anilmuthigi/accountversion',
-       {
-           query : `
-           {
-                builds(first: 1000, where: {id_gt:"`+tr+`"}){
-                    id
-                    owner
-                    accountVersion
-                    origin
-                 }
-           }
-           `
+//     //stores the data for build function call
+//     var resultversion;
+//     var cnt=0;
+//     tr=``;
+//     while(1)
+//     {
+//        resultversion = await axios.post(
+//        'https://api.thegraph.com/subgraphs/name/anilmuthigi/accountversion',
+//        {
+//            query : `
+//            {
+//                 builds(first: 1000, where: {id_gt:"`+tr+`"}){
+//                     id
+//                     owner
+//                     accountVersion
+//                     origin
+//                  }
+//            }
+//            `
            
-       }
+//        }
        
-       );
+//        );
 
 
 
-       if(Object.values(resultversion.data.data.builds).length===0)break;
-       dataversion=Object.values(resultversion.data.data.builds);
-       for (var i = 0; i < dataversion.length; i++)
-       {
-           //console.log(dataversion[i].owner.toString());
-           if(dsa_accounts_map.has(dataversion[i].owner.toString()))
-           {
-                if(parseInt(dataversion[i].accountVersion)==1)
-                {
-                    //dataversion[i].owner gets the the owner of the dsa, dsa_accounts_map map the address of the owner of dsa to the address of dsa
-                    dsa_accounts.set(dsa_accounts_map.get(dataversion[i].owner),parseInt(dataversion[i].accountVersion));
-                    cnt++;
-                }        
-           }      
-       }    
-       //done for pagenation
-       tr=resultversion.data.data.builds[Object.values(resultversion.data.data.builds).length-1].id;
-   }
-   console.log(cnt);
+//        if(Object.values(resultversion.data.data.builds).length===0)break;
+//        dataversion=Object.values(resultversion.data.data.builds);
+//        for (var i = 0; i < dataversion.length; i++)
+//        {
+//            //console.log(dataversion[i].owner.toString());
+//            if(dsa_accounts_map.has(dataversion[i].owner.toString()))
+//            {
+//                 if(parseInt(dataversion[i].accountVersion)==1)
+//                 {
+//                     //dataversion[i].owner gets the the owner of the dsa, dsa_accounts_map map the address of the owner of dsa to the address of dsa
+//                     dsa_accounts.set(dsa_accounts_map.get(dataversion[i].owner),parseInt(dataversion[i].accountVersion));
+//                     cnt++;
+//                 }        
+//            }      
+//        }    
+//        //done for pagenation
+//        tr=resultversion.data.data.builds[Object.values(resultversion.data.data.builds).length-1].id;
+//    }
+//    console.log(cnt);
 
-console.log(dsa_accounts.size);
+// console.log(dsa_accounts.size);
     
 
     //stores a list of unique tokenids owned by our dsa
