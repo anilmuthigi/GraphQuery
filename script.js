@@ -28,7 +28,21 @@ const main=async()=> {
      //var ctr=1;
 
     //console.log(contract2);
-    
+    const tokenPrices = await axios.get(
+        "https://api.instadapp.io/defi/prices"
+      );
+      //console.log(typeof(tokenPrices));
+
+      let newArray = Object.entries(tokenPrices.data);
+
+    let map1 = new Map(newArray);
+    //console.log(parseInt(map1.get('0x8878Df9E1A7c87dcBf6d3999D997f262C05D8C70')));
+
+
+
+
+   
+
 
     const multi = new MultiCall(provider);
 
@@ -115,7 +129,7 @@ const main=async()=> {
    }
    console.log(cnt);
 
-    console.log(dsa_accounts.size);
+console.log(dsa_accounts.size);
     
 
     //stores a list of unique tokenids owned by our dsa
@@ -196,108 +210,174 @@ const main=async()=> {
     console.log(usertokenmap.size);
 
     console.log(usertokenmap);
-    const inputs = [];
-    var cbt=0;
+
+    var d1='0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+    var same="https://api.instadapp.io/defi/tokens/details?owner=0x388e72eaf4689a7a698360b8e86bf71326107d7d&tokens%5B0%5D=";
+    var precision = await axios.get(
+        (same+d1)
+      );
+    let outputs = Object.entries(precision.data);
+    let dt1=Object.entries(new Map(outputs).values().next().value);
+    let map3=new Map(dt1);
+    console.log(map3.get('decimals'));
+
+
+    const inputs1 = [];
     for(const elem of tokenidset)
     {
-        inputs.push({ target:`0x9156cD73ba5F792E26e9a1762DfC05162d9408c5`,function:'getPositionInfoByTokenId',args:[elem] });
+        inputs1.push(elem);
+    }
+
+    //var cbt=0;
+    var tot=0;
+   
+    var vb=0;
+    while(tot<tokenidset.size)
+    {
+        const inputs=[];
+        for(var cbt=0;cbt<30;cbt++)
+    {
+
+
+
+
+        inputs.push({ target:`0x9156cD73ba5F792E26e9a1762DfC05162d9408c5`,function:'getPositionInfoByTokenId',args:[inputs1[tot]] });
         cbt++;
-        if(cbt==40)break;
+        tot++;
+        if(tot==tokenidset.size)break;
     }
 
-
+    var total_usd=0.0;
     const tokendata = await multi.multiCall(Contractabi,inputs);
-   for(var i=0;i<40;i++)
-   console.log(tokendata[1][i][10].toString(),tokendata[1][i][11].toString());
+   for(var i=0;i<inputs.length;i++)
+   {
 
-    //maps tokenid to liquidity
-    let liq = new Map();
-tr=``;
 
-while(1)
-{
-    const result2 = await axios.post(
-        'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
-        {
-            query: `
-            {
-                increaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
-                    id
-                    tokenId
-                    liquidity
-                    amount0
-                    amount1
-                    }
-            }
-            `
-        }
-        
-        );
+    d1=tokendata[1][i][0];
 
-    if(Object.values(result2.data.data.increaseLiquidities).length===0)break;
-    datas2=Object.values(result2.data.data.increaseLiquidities);
+    var precision = await axios.get(
+        (same+d1)
+      );
+    let outputs = Object.entries(precision.data);
+    let dt1=Object.entries(new Map(outputs).values().next().value);
+    let map3=new Map(dt1);
+    let pr1=tokendata[1][i][10]* Math.pow(10,-1*parseInt(map3.get('decimals')));
 
-    //code to increase liquidty of tokens owned by dsa-accounts
-    for(var i=0;i<datas2.length;i++)
-    {
-        //console.log(datas2[i].tokenId.toString(), tokenidset.has(datas2[i].tokenId));
-        if(tokenidset.has(datas2[i].tokenId.toString()))
-        {
-            //console.log(1);
-            if(liq.get(datas2[i].tokenId)===undefined)
-                liq.set(datas2[i].tokenId,parseInt(datas2[i].liquidity));
-            else
-                liq.set(datas2[i].tokenId,liq.get(datas2[i].tokenId)+parseInt(datas2[i].liquidity));
-        }
+
+
+
+    d1=tokendata[1][i][1];
+
+     precision = await axios.get(
+        (same+d1)
+      );
+     outputs = Object.entries(precision.data);
+     dt1=Object.entries(new Map(outputs).values().next().value);
+     map3=new Map(dt1);
+
+    let pr2=tokendata[1][i][11]*Math.pow(10,-1*parseInt(map3.get('decimals')));
+
+    total_usd+=pr1+pr2;
+    console.log(inputs1[vb++],pr1,pr2);
+
+
+   }
+
     }
 
-    tr = result2.data.data.increaseLiquidities[Object.values(result2.data.data.increaseLiquidities).length-1].id;
-
-}
-
-
-
-
-tr=``;
-while(1)
-{
-    const result3 = await axios.post(
-        'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
-        {
-            query: `
-            {
-                decreaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
-                    id
-                    tokenId
-                    liquidity
-                    amount0
-                    amount1
-                  }
-            }
-            `
-        }
-        
-        );
-
-    if(Object.values(result3.data.data.decreaseLiquidities).length===0)break;
-    datas3=Object.values(result3.data.data.decreaseLiquidities);
+    console.log("Total Amount in usd = ",total_usd);
     
-    //code to decrease liquidty of tokens owned by dsa-accounts
-
-    for(var i=0;i<datas3.length;i++)
-    {
-        if(tokenidset.has(datas3[i].tokenId))
-        {
-            if(liq.get(datas3[i].tokenId)!=undefined&&liq.get(datas3[i].tokenId)>=parseInt(datas3[i].liquidity))
-                liq.set(datas3[i].tokenId,liq.get(datas3[i].tokenId)-parseInt(datas3[i].liquidity));
-        }
-    }
-    tr = result3.data.data.decreaseLiquidities[Object.values(result3.data.data.decreaseLiquidities).length-1].id;
 
 
-}
-    for (const [key, value] of liq.entries()) {
-        console.log(key, value);
-      }
+
+//     //maps tokenid to liquidity
+//     let liq = new Map();
+// tr=``;
+
+// while(1)
+// {
+//     const result2 = await axios.post(
+//         'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
+//         {
+//             query: `
+//             {
+//                 increaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
+//                     id
+//                     tokenId
+//                     liquidity
+//                     amount0
+//                     amount1
+//                     }
+//             }
+//             `
+//         }
+        
+//         );
+
+//     if(Object.values(result2.data.data.increaseLiquidities).length===0)break;
+//     datas2=Object.values(result2.data.data.increaseLiquidities);
+
+//     //code to increase liquidty of tokens owned by dsa-accounts
+//     for(var i=0;i<datas2.length;i++)
+//     {
+//         //console.log(datas2[i].tokenId.toString(), tokenidset.has(datas2[i].tokenId));
+//         if(tokenidset.has(datas2[i].tokenId.toString()))
+//         {
+//             //console.log(1);
+//             if(liq.get(datas2[i].tokenId)===undefined)
+//                 liq.set(datas2[i].tokenId,parseInt(datas2[i].liquidity));
+//             else
+//                 liq.set(datas2[i].tokenId,liq.get(datas2[i].tokenId)+parseInt(datas2[i].liquidity));
+//         }
+//     }
+
+//     tr = result2.data.data.increaseLiquidities[Object.values(result2.data.data.increaseLiquidities).length-1].id;
+
+// }
+
+
+
+
+// tr=``;
+// while(1)
+// {
+//     const result3 = await axios.post(
+//         'https://api.thegraph.com/subgraphs/name/anilmuthigi/liquidityevents',
+//         {
+//             query: `
+//             {
+//                 decreaseLiquidities(first: 1000, where: {id_gt:"`+tr+`"}) {
+//                     id
+//                     tokenId
+//                     liquidity
+//                     amount0
+//                     amount1
+//                   }
+//             }
+//             `
+//         }
+        
+//         );
+
+//     if(Object.values(result3.data.data.decreaseLiquidities).length===0)break;
+//     datas3=Object.values(result3.data.data.decreaseLiquidities);
+    
+//     //code to decrease liquidty of tokens owned by dsa-accounts
+
+//     for(var i=0;i<datas3.length;i++)
+//     {
+//         if(tokenidset.has(datas3[i].tokenId))
+//         {
+//             if(liq.get(datas3[i].tokenId)!=undefined&&liq.get(datas3[i].tokenId)>=parseInt(datas3[i].liquidity))
+//                 liq.set(datas3[i].tokenId,liq.get(datas3[i].tokenId)-parseInt(datas3[i].liquidity));
+//         }
+//     }
+//     tr = result3.data.data.decreaseLiquidities[Object.values(result3.data.data.decreaseLiquidities).length-1].id;
+
+
+// }
+//     for (const [key, value] of liq.entries()) {
+//         console.log(key, value);
+//       }
 }
 main();
