@@ -275,6 +275,7 @@ console.log(dsa_accounts.size);
         console.log();
         console.log(tokendata[1][i][0]);
         console.log();
+        pr1=0.0;
     }
     else
     pr1=pr1*map1.get(tokendata[1][i][0]);
@@ -299,6 +300,7 @@ console.log(dsa_accounts.size);
         console.log();
         console.log(tokendata[1][i][1]);
         console.log();
+        pr2=0.0;
     }
     else 
     pr2=pr2*map1.get(tokendata[1][i][1]);
