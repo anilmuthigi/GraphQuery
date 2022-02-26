@@ -28,13 +28,16 @@ const main=async()=> {
      //var ctr=1;
 
     //console.log(contract2);
+
+
+    // this creates a map which maps token addresses to the conversion rate - to usd
     const tokenPrices = await axios.get(
         "https://api.instadapp.io/defi/prices"
       );
       //console.log(typeof(tokenPrices));
 
       let newArray = Object.entries(tokenPrices.data);
-
+    
     let map1 = new Map(newArray);
     //console.log(parseInt(map1.get('0x8878Df9E1A7c87dcBf6d3999D997f262C05D8C70')));
 
@@ -45,11 +48,13 @@ const main=async()=> {
 
 
     const multi = new MultiCall(provider);
-
-     // let dsa_accounts = new Map();
+    //stores the dsa accounts
      let dsa_accounts = new Map();
+
+     //maps dsa accounts' owner to the dsa
      let dsa_accounts_map = new Map();
 
+    //code to get dsa accounts
      while(1)
      {
         result = await axios.post(
@@ -70,8 +75,6 @@ const main=async()=> {
         
         );
 
-        //console.log(Object.values(result.data.data.logAccountCreateds).length + " "+ctr);
-        //ctr++;
         if(Object.values(result.data.data.logAccountCreateds).length===0)break;
         datas=Object.values(result.data.data.logAccountCreateds);
         for (var i = 0; i < datas.length; i++)
@@ -85,7 +88,10 @@ const main=async()=> {
         tr=result.data.data.logAccountCreateds[Object.values(result.data.data.logAccountCreateds).length-1].id;
     }
     
+    //prints the number of dsa
     console.log(dsa_accounts.size);
+
+    //stores the data for build function call
     var resultversion;
     var cnt=0;
     tr=``;
@@ -109,8 +115,8 @@ const main=async()=> {
        
        );
 
-       //console.log(Object.values(result.data.data.logAccountCreateds).length + " "+ctr);
-       //ctr++;
+
+
        if(Object.values(resultversion.data.data.builds).length===0)break;
        dataversion=Object.values(resultversion.data.data.builds);
        for (var i = 0; i < dataversion.length; i++)
@@ -120,11 +126,13 @@ const main=async()=> {
            {
                 if(parseInt(dataversion[i].accountVersion)==1)
                 {
+                    //dataversion[i].owner gets the the owner of the dsa, dsa_accounts_map map the address of the owner of dsa to the address of dsa
                     dsa_accounts.set(dsa_accounts_map.get(dataversion[i].owner),parseInt(dataversion[i].accountVersion));
                     cnt++;
                 }        
            }      
        }    
+       //done for pagenation
        tr=resultversion.data.data.builds[Object.values(resultversion.data.data.builds).length-1].id;
    }
    console.log(cnt);
@@ -139,11 +147,11 @@ console.log(dsa_accounts.size);
     let usertokenmap = new Map();
 
     tr=``;
-
+//tracks all the nft transfers
     while(1)
     {
 
-    
+
     const result1 = await axios.post(
         'https://api.thegraph.com/subgraphs/name/anilmuthigi/nftidtransfers',
         {
@@ -200,26 +208,31 @@ console.log(dsa_accounts.size);
        
 
     }
+    // used for pagenation
 
     tr = result1.data.data.transfers[Object.values(result1.data.data.transfers).length-1].id;
 
     }
 
-
+    //prints the number of tokens
     console.log(tokenidset.size);
-    console.log(usertokenmap.size);
 
+    
+    console.log(usertokenmap.size);
+    // maps the token and the dsa account which owns it
     console.log(usertokenmap);
 
+    //some variables to call the decimal precision api...gives the decimal precision of a token address
     var d1='0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
     var same="https://api.instadapp.io/defi/tokens/details?owner=0x388e72eaf4689a7a698360b8e86bf71326107d7d&tokens%5B0%5D=";
-    var precision = await axios.get(
-        (same+d1)
-      );
-    let outputs = Object.entries(precision.data);
-    let dt1=Object.entries(new Map(outputs).values().next().value);
-    let map3=new Map(dt1);
-    console.log(map3.get('decimals'));
+    
+    // var precision = await axios.get(
+    //     (same+d1)
+    //   );
+    // let outputs = Object.entries(precision.data);
+    // let dt1=Object.entries(new Map(outputs).values().next().value);
+    // let map3=new Map(dt1);
+    // console.log(map3.get('decimals'));
 
 
     const inputs1 = [];
@@ -228,7 +241,6 @@ console.log(dsa_accounts.size);
         inputs1.push(elem);
     }
 
-    //var cbt=0;
     var tot=0;
    
     var vb=0;
@@ -237,9 +249,6 @@ console.log(dsa_accounts.size);
         const inputs=[];
         for(var cbt=0;cbt<30;cbt++)
     {
-
-
-
 
         inputs.push({ target:`0x9156cD73ba5F792E26e9a1762DfC05162d9408c5`,function:'getPositionInfoByTokenId',args:[inputs1[tot]] });
         cbt++;
@@ -251,8 +260,6 @@ console.log(dsa_accounts.size);
     const tokendata = await multi.multiCall(Contractabi,inputs);
    for(var i=0;i<inputs.length;i++)
    {
-
-
     d1=tokendata[1][i][0];
 
     var precision = await axios.get(
@@ -261,7 +268,17 @@ console.log(dsa_accounts.size);
     let outputs = Object.entries(precision.data);
     let dt1=Object.entries(new Map(outputs).values().next().value);
     let map3=new Map(dt1);
+    //pr1 has the value of amount0 in usd.... 
     let pr1=tokendata[1][i][10]* Math.pow(10,-1*parseInt(map3.get('decimals')));
+    if(map1.get(tokendata[1][i][0])==undefined)
+    {
+        console.log();
+        console.log(tokendata[1][i][0]);
+        console.log();
+    }
+    else
+    pr1=pr1*map1.get(tokendata[1][i][0]);
+
 
 
 
@@ -274,10 +291,20 @@ console.log(dsa_accounts.size);
      outputs = Object.entries(precision.data);
      dt1=Object.entries(new Map(outputs).values().next().value);
      map3=new Map(dt1);
-
+ //pr2 has the value of amount0 in usd.... 
     let pr2=tokendata[1][i][11]*Math.pow(10,-1*parseInt(map3.get('decimals')));
 
+    if(map1.get(tokendata[1][i][1])==undefined)
+    {
+        console.log();
+        console.log(tokendata[1][i][1]);
+        console.log();
+    }
+    else 
+    pr2=pr2*map1.get(tokendata[1][i][1]);
+
     total_usd+=pr1+pr2;
+
     console.log(inputs1[vb++],pr1,pr2);
 
 
