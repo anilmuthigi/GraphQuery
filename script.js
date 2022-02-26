@@ -32,8 +32,8 @@ const main=async()=> {
 
     // this creates a map which maps token addresses to the conversion rate - to usd
     const tokenPrices = await axios.get(
-        "https://api.instadapp.io/defi/prices"
-      );
+        "https://api.instadapp.io/defi/prices?additionalTokens=0x090185f2135308BaD17527004364eBcC2D37e5F6,0x92D6C1e31e14520e676a687F0a93788B716BEff5,0xf21661D0D1d76d3ECb8e1B9F1c923DBfffAe4097,0xba5BDe662c17e2aDFF1075610382B9B691296350,0xe1406825186D63980fd6e2eC61888f7B91C4bAe4,0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39,0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b,0x6BF4B73d2C3E806B41FeB83665Ef46A8A65F01B1,0x990f341946A3fdB507aE7e52d17851B87168017c,0xf66Cd2f8755a21d3c8683a10269F795c0532Dd58,0x90DE74265a416e1393A450752175AED98fe11517,0xAa6E8127831c9DE45ae56bB1b0d4D4Da6e5665BD,0xF9A2D7E60a3297E513317AD1d7Ce101CC4C6C8F6,0x2d94AA3e47d9D5024503Ca8491fcE9A2fB4DA198,0x3b484b82567a09e2588A13D54D032153f0c0aEe0,0xfcfC434ee5BfF924222e084a8876Eee74Ea7cfbA,0xbC396689893D065F41bc2C6EcbeE5e0085233447,0xB4EFd85c19999D84251304bDA99E90B92300Bd93,0xcAfE001067cDEF266AfB7Eb5A286dCFD277f3dE5,0xf4d2888d29D722226FafA5d9B24F9164c092421E"
+     );
       //console.log(typeof(tokenPrices));
 
       let newArray = Object.entries(tokenPrices.data);
@@ -143,6 +143,11 @@ console.log(dsa_accounts.size);
     //stores a list of unique tokenids owned by our dsa
     let tokenidset = new Set();
     
+
+    //stores unfound token addresses
+    let unfoundt= new Set();
+
+
     //maps every token to the dsa account which owns it
     let usertokenmap = new Map();
 
@@ -256,6 +261,8 @@ console.log(dsa_accounts.size);
         if(tot==tokenidset.size)break;
     }
 
+
+
     var total_usd=0.0;
     const tokendata = await multi.multiCall(Contractabi,inputs);
    for(var i=0;i<inputs.length;i++)
@@ -274,6 +281,7 @@ console.log(dsa_accounts.size);
     {
         console.log();
         console.log(tokendata[1][i][0]);
+        unfoundt.add(tokendata[1][i][0]);
         console.log();
         pr1=0.0;
     }
@@ -299,6 +307,7 @@ console.log(dsa_accounts.size);
     {
         console.log();
         console.log(tokendata[1][i][1]);
+        unfoundt.add(tokendata[1][i][1]);
         console.log();
         pr2=0.0;
     }
@@ -315,7 +324,7 @@ console.log(dsa_accounts.size);
     }
 
     console.log("Total Amount in usd = ",total_usd);
-    
+    console.log(unfoundt);
 
 
 
