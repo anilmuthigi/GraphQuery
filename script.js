@@ -194,7 +194,7 @@ const main=async()=> {
      );
     
     let newArray = Object.entries(tokenPrices.data);
-    let map1 = new Map(newArray);
+    let tokencost_toUSD = new Map(newArray);
 
 
     //stores unfound token addresses... the token addresses which were not present in the above api
@@ -259,8 +259,8 @@ const main=async()=> {
             //for now, lets assume that the pool is valid, if any token is not found, we can reset its value
             let valid_pool_checker=1;
 
-            //map1 is a map which maps token addresses to the conversion rate: in usd
-            if(map1.get(tokendata[1][i][0])==undefined)
+            //tokencost_toUSD is a map which maps token addresses to the conversion rate: in usd
+            if(tokencost_toUSD.get(tokendata[1][i][0])==undefined)
             {
                 console.log();
                 console.log("Token0 address not found in api: ",tokendata[1][i][0]);
@@ -275,9 +275,9 @@ const main=async()=> {
             }
             else
             {
-                //map1 is a map which maps token addresses to the conversion rate: in usd
+                //tokencost_toUSD is a map which maps token addresses to the conversion rate: in usd
                 //multiplying the token amount with its conversion rate
-                amount0_usd=amount0_usd*map1.get(tokendata[1][i][0]);
+                amount0_usd=amount0_usd*tokencost_toUSD.get(tokendata[1][i][0]);
             }
             
 
@@ -287,8 +287,8 @@ const main=async()=> {
             //amount1_usd has the value of amount1 in usd.... 
             let amount1_usd=tokendata[1][i][11]*Math.pow(10,-1*parseInt(await getPrecision(address_token1)));
 
-            //map1 is a map which maps token addresses to the conversion rate: in usd
-            if(map1.get(tokendata[1][i][1])==undefined)
+            //tokencost_toUSD is a map which maps token addresses to the conversion rate: in usd
+            if(tokencost_toUSD.get(tokendata[1][i][1])==undefined)
             {
                 console.log();
                 console.log("Token1 address not found in api: ",tokendata[1][i][1]);
@@ -303,9 +303,9 @@ const main=async()=> {
             }
             else 
             {
-                //map1 is a map which maps token addresses to the conversion rate: in usd
+                //tokencost_toUSD is a map which maps token addresses to the conversion rate: in usd
                 //multiplying the token amount with its conversion rate
-                amount1_usd=amount1_usd*map1.get(tokendata[1][i][1]);
+                amount1_usd=amount1_usd*tokencost_toUSD.get(tokendata[1][i][1]);
             }
             
             //add the amount0 and amount1 values to the total_usd variable if the pool is valid
