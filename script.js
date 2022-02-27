@@ -255,6 +255,10 @@ const main=async()=> {
             let amount0_usd=tokendata[1][i][10]* Math.pow(10,-1*parseInt(await getPrecision(address_token0)));
 
 
+            //if both addresses of token are present the value of the tokens get added(since the pool is valid) else if any of the token address is not found, we ignore both tokens' usd value
+            //for now, lets assume that the pool is valid, if any token is not found, we can reset its value
+            let valid_pool_checker=1;
+
             //map1 is a map which maps token addresses to the conversion rate: in usd
             if(map1.get(tokendata[1][i][0])==undefined)
             {
@@ -265,6 +269,9 @@ const main=async()=> {
 
                 //no contribution of tokens which were not found in the api
                 amount0_usd=0.0;
+
+                //pool becomes invalid
+                valid_pool_checker=0;
             }
             else
             {
@@ -287,7 +294,12 @@ const main=async()=> {
                 console.log("Token1 address not found in api: ",tokendata[1][i][1]);
                 unfound_tokenaddr.add(tokendata[1][i][1]);
                 console.log();
+
+                //no contribution of tokens which were not found in the api
                 amount1_usd=0.0;
+
+                //pool becomes invalid
+                valid_pool_checker=0;
             }
             else 
             {
@@ -296,11 +308,16 @@ const main=async()=> {
                 amount1_usd=amount1_usd*map1.get(tokendata[1][i][1]);
             }
             
-            //add the amount0 and amount1 values to the total_usd variable
-            total_usd+=amount0_usd+amount1_usd;
-
-            //
-            console.log("Nft id: ",tokenid_array[token_array_index++],"  Amount0 in usd: ",amount0_usd,"  Amount1 in usd: ",amount1_usd);
+            //add the amount0 and amount1 values to the total_usd variable if the pool is valid
+            if(valid_pool_checker==1)
+            {
+                total_usd+=amount0_usd+amount1_usd;
+                console.log("Nft id: ",tokenid_array[token_array_index++],"  Amount0 in usd: ",amount0_usd,"  Amount1 in usd: ",amount1_usd);
+            }
+            else 
+            {
+                console.log("Invalid pool with Nft id: ",tokenid_array[token_array_index++]);
+            }
         
         }
 
