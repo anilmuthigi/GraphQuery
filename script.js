@@ -325,7 +325,7 @@ const main=async()=> {
 
     console.log("Total Amount in usd = ",total_usd);
     console.log();
-    console.log("Tokens which were not found in the api.. hence their amounts were ignored :");
+    console.log("Tokens which were not found in the api.. hence the pools with these tokens were ignored :");
     console.log(unfound_tokenaddr);
 
 
